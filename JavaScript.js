@@ -1,49 +1,14 @@
 'use strict'
 // Settings
 var FPS_MINIMUM = 15;
-var STARS_MAXIMUM = 20;
 var FRAM_TIMES_SIZE = 10;
-var GRAVITY_CONSTANT = 0.01;
+var GRAVITY_CONSTANT = 0.001;
 var TRACE_LENGTH_TIME = 10000;
 var FRAME_TIME_MAXIMUM = 500;
 var CONNECTION_DISTANCE = 100;
 var DO_CONTAMINATE_COLOR = true;
 
 // Classes
-class Color
-{
-	constructor(r=0, g=0, b=0, a=255)
-	{
-		this.R = r;
-		this.G = g;
-		this.B = b;
-		this.A = a;
-	}
-}
-Color.prototype.toString = function()
-{
-	var red = 	Math.floor(Math.max(Math.min(this.R, 255), 0)).toString(16);
-	var green = Math.floor(Math.max(Math.min(this.G, 255), 0)).toString(16);
-	var blue = 	Math.floor(Math.max(Math.min(this.B, 255), 0)).toString(16);
-	var alpha = Math.floor(Math.max(Math.min(this.A, 255), 0)).toString(16);
-
-	red = 1 < red.length ? red : "0" + red;
-	green = 1 < green.length ? green : "0" + green;
-	blue = 1 < blue.length ? blue : "0" + blue;
-	alpha = 1 < alpha.length ? alpha : "0" + alpha;
-
-	return "#" + red + green + blue + alpha;
-}
-
-class Position
-{
-	constructor(x=0, y=0)
-	{
-		this.X = x;
-		this.Y = y;
-	}
-}
-
 class Speed
 {
 	constructor(x=0, y=0)
@@ -77,12 +42,12 @@ class Trace
 
 class Star
 {
-	constructor(pos)
+	constructor(pos=new Position())
 	{
 		this.pos = pos;
 		this.velocity = new Speed();
 		this.color = new Color(0, 0, 0);
-		this.radius = 3.0;
+		this.radius = 0.1;
 		this.mass = 1;
 	}
 }
@@ -139,27 +104,32 @@ var traces = Array();
 var artificialMass = 1;
 var canvas = undefined;
 var centerOn = undefined;
+var maxStars = undefined;
 var frameTimes = Array();
+var statusWaiting = true;
 var frameWidth = undefined;
+var drawTraces = undefined;
 var frameHeight = undefined;
+var enlargeStars = undefined;
 var canvasContext = undefined;
 var skipAdd = FRAM_TIMES_SIZE;
 var artificialStar = undefined;
+var centerOnSelected = undefined;
 var canvasBoundingClientRect = undefined;
 var frameTimeAddStarThreshold_ms = 1000/FPS_MINIMUM;
 var standardSteps = Array
 (
 	{
-		"step": 0.5,
-		"color": new Color(255, 33, 79, 255)
+		'step': 0.5,
+		'color': new Color(255, 33, 79, 255)
 	},
 	{
-		"step": 0.0,
-		"color": new Color(255, 33, 79, 255)
+		'step': 0.0,
+		'color': new Color(255, 33, 79, 255)
 	},
 	{
-		"step": 1.0,
-		"color": new Color(255, 33, 79, 255)
+		'step': 1.0,
+		'color': new Color(255, 33, 79, 255)
 	}
 );
 
@@ -186,7 +156,35 @@ function onload()
 	};
 
 	// Begin animation
+	inputChange();
+	let timestamp = Date.now();
+	(function simulationEngine(){
+		if(statusWaiting){
+			let now = Date.now();
+			gravityStars(now - timestamp);
+			timestamp = now;
+		}
+		setTimeout(simulationEngine, Math.max(statusWaiting ? 0 : 1, -skipAdd));
+	})();
 	window.requestAnimationFrame(animate);
+}
+
+function inputChange(){
+	drawTraces = document.getElementById('drawTraces').checked;
+	enlargeStars = document.getElementById('enlargeStars').checked;
+	maxStars = parseInt(document.getElementById('maxStars').value);
+	let selectedOption = document.getElementById('centerOnSelecter').selectedOptions[0].value;
+	switch(selectedOption){
+		case "heaviest":
+		case "center":
+		case "gravity":
+			centerOnSelected = selectedOption;
+			break;
+
+		default:
+			centerOnSelected = undefined;
+			break;
+	};
 }
 
 function createGravityDrag(event)
@@ -319,6 +317,10 @@ function addStars(numberOfStars = 3)
 		newStar.color.R = Math.random()*255;
 		newStar.color.G = Math.random()*255;
 		newStar.color.B = Math.random()*255;
+		if(centerOn != undefined){
+			newStar.speed.dX += centerOn.speed.dX;
+			newStar.speed.dY += centerOn.speed.dY;
+		}
 		stars.push(newStar);
 	}
 }
@@ -341,11 +343,21 @@ function getAverageFrameTime()
 
 function animate(timespan)
 {
+	statusWaiting = false;
 	var lastFrameTime = timespan - lastFrame;
 	lastFrameTime = Math.min(lastFrameTime, FRAME_TIME_MAXIMUM);
 
 	if(0 < lastFrameTime)
 	{
+		if(centerOnSelected === "heaviest" && 0 < skipAdd && 0 < stars.length){
+			let heaviest = stars.sort((a, b)=>{return b.mass - a.mass})[0];
+			if(centerOn == undefined){
+				centerOn = heaviest;
+			}
+			else{
+				centerOn = centerOn.mass < heaviest.mass ? heaviest : centerOn;
+			}
+		}
 		lastFrame = timespan;
 
 		frameTimes.push(lastFrameTime);
@@ -357,7 +369,7 @@ function animate(timespan)
 			if(skipAdd < 0 && averageFrameTime < frameTimeAddStarThreshold_ms)
 			{
 				skipAdd = FRAM_TIMES_SIZE;
-				if(stars.length < STARS_MAXIMUM)
+				if(maxStars === 0 || stars.length < maxStars)
 				{
 					var newStar = getNewStar();
 					newStar.color.R = Math.random()*255;
@@ -375,11 +387,22 @@ function animate(timespan)
 
 			drawTrace();
 
-			gravityStars(averageFrameTime);
-
-			if(centerOn !== undefined)
-			{
-				centerOnStar();
+			if(centerOnSelected === "center" || centerOnSelected === "gravity"){
+				let totalOffset = 0;
+				let artificialStar = new Star();
+				let calcWithGravity = centerOnSelected === "gravity";
+				stars.forEach(star => {
+					let offset = calcWithGravity ? star.mass : 1;
+					totalOffset += offset;
+					artificialStar.pos.X += star.pos.X * offset;
+					artificialStar.pos.Y += star.pos.Y * offset;
+				});
+				artificialStar.pos.X /= totalOffset;
+				artificialStar.pos.Y /= totalOffset;
+				centerOnObject(artificialStar);
+			}
+			else if(typeof centerOn === "object"){
+				centerOnObject();
 			}
 
 			drawStars();
@@ -392,21 +415,21 @@ function animate(timespan)
 	}
 
 	window.requestAnimationFrame(animate);
+	statusWaiting = true;
 }
 
-function centerOnStar()
-{
-	var offset_X = frameWidth/2 - centerOn.pos.X;
-	var offset_Y = frameHeight/2 - centerOn.pos.Y;
+function centerOnObject(star=centerOn){
+	var offset_X = frameWidth/2 - star.pos.X;
+	var offset_Y = frameHeight/2 - star.pos.Y;
 
-	centerOn.pos.X = frameWidth/2;
-	centerOn.pos.Y = frameHeight/2;
+	star.pos.X = frameWidth/2;
+	star.pos.Y = frameHeight/2;
 
-	stars.forEach(star => {
-		if(star !== centerOn)
+	stars.forEach(localStar => {
+		if(localStar !== star)
 		{
-			star.pos.X += offset_X;
-			star.pos.Y += offset_Y;
+			localStar.pos.X += offset_X;
+			localStar.pos.Y += offset_Y;
 		}
 	});
 
@@ -442,8 +465,8 @@ function drawTrace()
 		var colorSteps = Array
 		(
 			{
-				"step": 0.0,
-				"color": trace.color
+				'step': 0.0,
+				'color': trace.color
 			}
 		);
 		canvasContext.strokeStyle = addColorStops(gradient, colorSteps);
@@ -519,7 +542,9 @@ function gravityStars(timeDuration)
 				}
 			}
 
-			traces.push(new Trace(pos, new Position(x, y), star.color));
+			if(drawTraces){
+				traces.push(new Trace(pos, new Position(x, y), star.color));
+			}
 
 			pos.X = x;
 			pos.Y = y;
@@ -609,8 +634,8 @@ function drawStars()
 {
 	stars.forEach(star => {
 		canvasContext.beginPath();
-		canvasContext.strokeStyle = "White";
-		canvasContext.arc(star.pos.X, star.pos.Y, star.radius, 0, 2*Math.PI);
+		canvasContext.strokeStyle = 'White';
+		canvasContext.arc(star.pos.X, star.pos.Y, enlargeStars ? (star.radius < 3 ? 3 : star.radius) : star.radius, 0, 2*Math.PI);
 		canvasContext.fillStyle = star.color.toString();
 		canvasContext.fill();
 		canvasContext.stroke();
@@ -620,6 +645,6 @@ function drawStars()
 
 function addColorStops(gradient, colorStepArray)
 {
-	colorStepArray.forEach(colorStep => gradient.addColorStop("" + colorStep.step, colorStep.color.toString()));
+	colorStepArray.forEach(colorStep => gradient.addColorStop('' + colorStep.step, colorStep.color.toString()));
 	return gradient;
 }
