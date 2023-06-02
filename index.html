@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<!-- Miscellaneous -->
+			<meta charset="UTF-8">
+			<title>Constellation show</title>
+			<!-- TODO: Disable scale. -->
+			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<meta name="mobile-web-app-capable" content="yes">
+			<!-- TODO: Add icon
+				<link rel="icon" sizes="192x192" href="https://docs.google.com/drawings/d/1SvVIheWa25irTklCIGvLh6NrFe9dn4LjSpc1dDsmWgQ/pub?w=192&h=192">
+			-->
+		<!-- /Miscellaneous -->
+
+		<!-- Imports -->
+		<script type="text/javascript" src="https://chrisacrobat.github.io/js-compilation/Color.js"></script>
+		<script type="text/javascript" src="https://chrisacrobat.github.io/js-compilation/Position.js"></script>
+		<!-- /Imports -->
+
+		<style>
+			body{
+				overflow: hidden;
+				background-color: black;
+				margin: 0px;
+			}
+		
+			canvas{
+				margin: 0;
+			}
+
+			#input-console{
+				position: absolute;
+				bottom: 0px;
+				right: 0px;
+				background: white;
+				padding: 4px;
+				opacity: 0;
+			}
+
+			#input-console:hover{
+				opacity: 1;
+			}
+		</style>
+
+		<script type="text/javascript" src="/ConstellationShow/JavaScript.js"></script>
+	</head>
+
+	<body onload="onload()">
+		<canvas></canvas>
+		<div id="input-console" onmouseleave="inputChange()">
+			Maximum number of stars <input type="number" value="0" step="1" min="0" id="maxStars" onchange="inputChange()">
+			<br>
+			Draw traces <input type="checkbox" id="drawTraces" onchange="inputChange()">
+			<br>
+			Visually enlarge stars <input type="checkbox" id="enlargeStars" onchange="inputChange()">
+			<br>
+			Center on 
+			<select id="centerOnSelecter" onchange="inputChange()">
+				<option value="">nothing</option>
+				<option value="heaviest">heaviest</option>
+				<option value="center">mean position</option>
+				<option value="gravity">mean gravity</option>
+			</select>
+		</div>
+	</body>
+</html>
