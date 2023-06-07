@@ -35,6 +35,7 @@ function onload(){
 	worker.onmessage = state => {
 		const renderStart = Date.now();
 		const stars = state.data.stars;
+		const offset = state.data.offset;
 		const centerOn = state.data.centerOn;
 		numberOfStars.innerHTML = stars.length;
 		canvasContext.clearRect(0, 0, window.innerWidth, window.innerHeight);
@@ -67,6 +68,10 @@ function onload(){
 					return;
 				}
 
+			//	trace.start.x -= offset.x;
+			//	trace.start.y -= offset.y;
+			//	trace.stop.x -= offset.x;
+			//	trace.stop.y -= offset.y;
 				if(centerOn){
 					trace.start.x -= centerOn.speed.dx;
 					trace.start.y -= centerOn.speed.dy;

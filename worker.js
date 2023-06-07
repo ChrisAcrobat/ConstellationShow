@@ -187,8 +187,15 @@ function centerOnObject(star=_centerOn){
 		if(localStar !== star){
 			localStar.pos.X += x;
 			localStar.pos.Y += y;
+			localStar.velocity.dX += star.velocity.dX;
+			localStar.velocity.dY += star.velocity.dY;
 		}
 	});
+
+	star.velocity.dX = 0;
+	star.velocity.dY = 0;
+
+	return {x, y};
 }
 function gravityStars(timeDuration){
 	if(timeDuration){
@@ -304,9 +311,10 @@ onmessage = message => {
 	onmessage = message => {
 		_settings = message.data.settings;
 		_queue = _queue.then(()=>{
+			let offset = {x:0,y:0}
 			if(_settings.centerOn === 'heaviest'){
 				_centerOn = stars.sort((a, b)=>{return b.mass - a.mass})[0];
-				centerOnObject(_centerOn);
+				offset = centerOnObject(_centerOn);
 			}else if(_settings.centerOn === 'meanCenter' || _settings.centerOn === 'meanGravity'){
 				let totalOffset = 0;
 				const artificialStar = new Star();
@@ -319,9 +327,9 @@ onmessage = message => {
 				});
 				artificialStar.pos.X /= totalOffset;
 				artificialStar.pos.Y /= totalOffset;
-				centerOnObject(artificialStar);
+				offset = centerOnObject(artificialStar);
 			}
-			postMessage({stars: stars.map(star => star.parse()), centerOn: _centerOn?.parse(true)});
+			postMessage({stars: stars.map(star => star.parse()), offset, centerOn: _centerOn?.parse(true)});
 		});
 	};
 	onmessage(message);
