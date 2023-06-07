@@ -11,6 +11,7 @@ let _centerOn;
 let _frameTime;
 let _frameTimeMaxTarget;
 let _doColorContamination;
+let _newStarRadius;
 let _lastState = [];
 class Trace{
 	constructor(star){
@@ -108,6 +109,7 @@ function inputChange(){
 	_maxStars = document.getElementById('maxStars').valueAsNumber;
 	_gravityConstant = document.getElementById('gravityConstant').valueAsNumber;
 	_frameTimeMaxTarget = document.getElementById('frameTimeMaxTarget').valueAsNumber;
+	_newStarRadius = document.getElementById('newStarRadius').valueAsNumber;
 }
 function getAverage(array){
 	let sum = 0;
@@ -127,7 +129,8 @@ function requestUpdate(){
 			gravityConstant: _gravityConstant,
 			frameTimeAcceptable: _frameTime < _frameTimeMaxTarget,
 			doColorContamination: _doColorContamination,
-			centerOn: _centerOn
+			centerOn: _centerOn,
+			newStarRadius: _newStarRadius
 		}
 	});
 }

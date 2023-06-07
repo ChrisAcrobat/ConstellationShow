@@ -48,7 +48,7 @@ class Star{
 		this.pos = pos;
 		this.velocity = new Speed();
 		this.color = new Color(0, 0, 0);
-		this.radius = 0.1;
+		this.radius = _settings.newStarRadius;
 		this.mass = 1;
 	}
 	mergeWith(secondStar) {
