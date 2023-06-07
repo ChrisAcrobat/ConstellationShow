@@ -1,21 +1,10 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<!-- Miscellaneous -->
-			<meta charset="UTF-8">
-			<title>Constellation show</title>
-			<!-- TODO: Disable scale. -->
-			<meta name="viewport" content="width=device-width, initial-scale=1.0">
-			<meta name="mobile-web-app-capable" content="yes">
-			<!-- TODO: Add icon
-				<link rel="icon" sizes="192x192" href="https://docs.google.com/drawings/d/1SvVIheWa25irTklCIGvLh6NrFe9dn4LjSpc1dDsmWgQ/pub?w=192&h=192">
-			-->
-		<!-- /Miscellaneous -->
-
-		<!-- Imports -->
-		<script type="text/javascript" src="https://chrisacrobat.github.io/js-compilation/Color.js"></script>
-		<script type="text/javascript" src="https://chrisacrobat.github.io/js-compilation/Position.js"></script>
-		<!-- /Imports -->
+		<meta charset="UTF-8">
+		<title>Constellation show</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="mobile-web-app-capable" content="yes">
 
 		<style>
 			body{
@@ -42,24 +31,36 @@
 			}
 		</style>
 
-		<script type="text/javascript" src="/ConstellationShow/JavaScript.js"></script>
+		<script type="text/javascript" src="JavaScript.js"></script>
 	</head>
 
 	<body onload="onload()">
 		<canvas></canvas>
 		<div id="input-console" onmouseleave="inputChange()">
+			Number of stars: <span id="numberOfStars"></span>
+			<br>
+			Frame time: <span id="frameTime"></span>
+			<br>
+			Highest acceptable frame time <input type="number" value="15" step=".1" min="0" id="frameTimeMaxTarget" onchange="inputChange()">
+			<br>
 			Maximum number of stars <input type="number" value="0" step="1" min="0" id="maxStars" onchange="inputChange()">
 			<br>
-			Draw traces <input type="checkbox" id="drawTraces" onchange="inputChange()">
+			Gravity constant <input type="number" value="0.001" step="0.001" min="0" id="gravityConstant" onchange="inputChange()">
+			<br>
+			Color contamination <input type="checkbox" checked id="doColorContamination" onchange="inputChange()">
 			<br>
 			Visually enlarge stars <input type="checkbox" id="enlargeStars" onchange="inputChange()">
 			<br>
-			Center on 
-			<select id="centerOnSelecter" onchange="inputChange()">
+			Draw traces <input type="checkbox" id="drawTraces" onchange="inputChange()">
+			<br>
+			Trace length (seconds) <input type="number" value="10" step="1" min="0" id="traceLengthSeconds" onchange="inputChange()">
+			<br>
+			Center on
+			<select id="centerOnSelector" onchange="inputChange()">
 				<option value="">nothing</option>
 				<option value="heaviest">heaviest</option>
-				<option value="center">mean position</option>
-				<option value="gravity">mean gravity</option>
+				<option value="meanCenter">mean position</option>
+				<option value="meanGravity">mean gravity</option>
 			</select>
 		</div>
 	</body>
